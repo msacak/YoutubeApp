@@ -1,0 +1,30 @@
+ CREATE TABLE tbluser(
+	id bigserial PRIMARY KEY,
+	name varchar(50),
+	surname varchar(50),
+	email varchar(50) UNIQUE,
+	username varchar(50) UNIQUE,
+	password varchar(50)
+)
+
+
+CREATE TABLE tblvideo(
+	id bigserial PRIMARY KEY,
+	user_id bigint REFERENCES tbluser(id),
+	title varchar(50),
+	description TEXT,
+	views bigint
+)
+
+CREATE TABLE tblcomment(
+	id bigserial PRIMARY KEY,
+	user_id bigint REFERENCES tbluser(id),
+	video_id bigint REFERENCES tblvideo(id),
+	comment TEXT
+)
+
+CREATE TABLE tbllike(
+	id bigserial PRIMARY KEY,
+	user_id bigint REFERENCES tbluser(id),
+	video_id bigint REFERENCES tblvideo(id)
+)
