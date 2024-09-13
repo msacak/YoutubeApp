@@ -97,4 +97,12 @@ public class VideoService {
        }
        return videoList;
     }
+
+    public List<Video> findVideosByTitle(String title) {
+        List<Video> videoList = videoRepository.findVideosByTitle(title);
+        if(videoList.isEmpty()){
+            ConsoleTextUtils.printErrorMessage("Aramaya uygun video bulunamadi.");
+        }
+        return videoList;
+    }
 }

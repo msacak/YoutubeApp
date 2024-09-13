@@ -129,5 +129,26 @@ public class VideoRepository implements ICRUD<Video> {
         return videoList;
     }
 
+    public List<Video> findVideosByTitle(String baslik){
+        sql = "SELECT * FROM tblvideo WHERE title ILIKE '%title%'";
+        List<Video> videoList = new ArrayList<>();
+        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
+            ResultSet rs = preparedStatement.executeQuery();
+            while(rs.next()) {
+                Long id = rs.getLong("id");
+                Long user_id = rs.getLong("user_id");
+                String title = rs.getString("title");
+                String description = rs.getString("description");
+                Long views = rs.getLong("views");
+
+                videoList.add(new Video(id, user_id,title,description,views));
+            }
+
+        } catch (SQLException e) {
+            ConsoleTextUtils.printErrorMessage("VideoRepository: Video listesi görüntülenirken hata oluştu.");
+        }
+        return videoList;
+    }
+
 
 }

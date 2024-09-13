@@ -53,4 +53,8 @@ public class VideoController  {
     public List<Video> getTrendVideos(){
         return videoService.getTrendVideos();
     }
+
+    public List<Video> findVideosByTitle(String title) {
+        return videoService.findVideosByTitle(title);
+    }
 }

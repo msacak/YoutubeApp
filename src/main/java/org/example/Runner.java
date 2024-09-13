@@ -25,7 +25,7 @@ public class Runner {
         UserService userService = new UserService();
 
         MainGUI mainGUI = new MainGUI();
-        mainGUI.mainMenuOptions(mainGUI.mainMenu());
+        mainGUI.mainGUI();
 
 
 
