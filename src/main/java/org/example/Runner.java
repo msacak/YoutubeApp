@@ -6,6 +6,7 @@ import org.example.entity.Comment;
 import org.example.entity.Like;
 import org.example.entity.User;
 import org.example.entity.Video;
+import org.example.gui.MainGUI;
 import org.example.repository.CommentRepository;
 import org.example.repository.LikeRepository;
 import org.example.repository.UserRepository;
@@ -22,6 +23,9 @@ public class Runner {
         LikeRepository likeRepository = new LikeRepository();
 
         UserService userService = new UserService();
+
+        MainGUI mainGUI = new MainGUI();
+        mainGUI.mainMenuOptions(mainGUI.mainMenu());
 
 
 

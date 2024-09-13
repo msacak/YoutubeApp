@@ -202,7 +202,8 @@ public class UserRepository implements ICRUD<User> {
                 Long user_id = rs.getLong("user_id");
                 String title = rs.getString("title");
                 String description = rs.getString("description");
-                videoList.add(new Video(id,user_id,title,description));
+                Long views = rs.getLong("views");
+                videoList.add(new Video(id,user_id,title,description,views));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

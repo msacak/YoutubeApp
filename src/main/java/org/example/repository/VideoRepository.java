@@ -77,8 +77,9 @@ public class VideoRepository implements ICRUD<Video> {
                 Long user_id = rs.getLong("user_id");
                 String title = rs.getString("title");
                 String description = rs.getString("description");
+                Long views = rs.getLong("views");
 
-                videoList.add(new Video(id, user_id,title,description));
+                videoList.add(new Video(id, user_id,title,description,views));
             }
 
         } catch (SQLException e) {
@@ -97,12 +98,36 @@ public class VideoRepository implements ICRUD<Video> {
                 Long user_id = rs.getLong("user_id");
                 String title = rs.getString("title");
                 String description = rs.getString("description");
+                Long views = rs.getLong("views");
 
-                return Optional.of(new Video(bulunacakVideoId, user_id, title, description));
+                return Optional.of(new Video(bulunacakVideoId, user_id, title, description,views));
             }
         } catch (SQLException e) {
             ConsoleTextUtils.printErrorMessage("VideoRepository: Aradığınız video bulunurken hata oluştu.");
         }
         return Optional.empty();
     }
+
+    public List<Video> getTrendVideos(){
+        sql = "SELECT * FROM tblvideo ORDER BY views DESC LIMIT 5";
+        List<Video> videoList = new ArrayList<>();
+        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
+            ResultSet rs = preparedStatement.executeQuery();
+            while(rs.next()) {
+                Long id = rs.getLong("id");
+                Long user_id = rs.getLong("user_id");
+                String title = rs.getString("title");
+                String description = rs.getString("description");
+                Long views = rs.getLong("views");
+
+                videoList.add(new Video(id, user_id,title,description,views));
+            }
+
+        } catch (SQLException e) {
+            ConsoleTextUtils.printErrorMessage("VideoRepository: Video listesi görüntülenirken hata oluştu.");
+        }
+        return videoList;
+    }
+
+
 }

@@ -18,11 +18,12 @@ public class Video {
         this.views = 0L;
     }
 
-    public Video(Long id, Long user_id, String title, String description){
+    public Video(Long id, Long user_id, String title, String description,Long views){
         this.id = id;
         this.user_id = user_id;
         this.title = title;
         this.description = description;
+        this.views = views;
     }
 
     public Long getId() {
