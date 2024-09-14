@@ -1,29 +1,38 @@
 package org.example.entity;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "tblvideo")
 public class Video {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long user_id;
+
+    @ManyToOne
+    private User user;
+
     private String title;
     private String description;
-    private Long views;
+    private Long views = 0L;
 
 
     public Video() {
     }
 
-    public Video(Long user_id, String title, String description) {
-        this.user_id = user_id;
+    public Video(User user, String title, String description) {
+        this.user = user;
         this.title = title;
         this.description = description;
-        this.views = 0L;
+
     }
 
-    public Video(Long id, Long user_id, String title, String description,Long views){
+    public Video(Long id, User user, String title, String description) {
         this.id = id;
-        this.user_id = user_id;
+        this.user = user;
         this.title = title;
         this.description = description;
-        this.views = views;
+
     }
 
     public Long getId() {
@@ -34,12 +43,12 @@ public class Video {
         this.id = id;
     }
 
-    public Long getUser_id() {
-        return user_id;
+    public User getUser() {
+        return user;
     }
 
-    public void setUser_id(Long user_id) {
-        this.user_id = user_id;
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public String getTitle() {
@@ -70,7 +79,7 @@ public class Video {
     public String toString() {
         return "Video{" +
                 "id=" + id +
-                ", user_id='" + user_id + '\'' +
+                ", user=" + user +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", views=" + views +

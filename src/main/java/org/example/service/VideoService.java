@@ -11,6 +11,7 @@ import org.example.repository.VideoRepository;
 import org.example.utility.ConsoleTextUtils;
 import org.example.utility.ICRUD;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,19 +31,18 @@ public class VideoService {
         VideoResponseDTO videoResponseDTO = new VideoResponseDTO();
         Optional<User> userOpt = userService.findByUsernameAndPassword(videoSaveRequestDTO.getUsername(), videoSaveRequestDTO.getPassword());
         try {
-            if (userOpt.isPresent()) {
+            if(userOpt.isPresent()) {
                 video = new Video();
+                video.setUser(userOpt.get());
                 video.setDescription(videoSaveRequestDTO.getDescription());
                 video.setTitle(videoSaveRequestDTO.getTitle());
-
-                video.setUser_id(userOpt.get().getId());
                 videoRepository.save(video);
-                ConsoleTextUtils.printSuccessMessage(video.getTitle() + " başlıklı video başarıyla kaydedildi.");
-                videoResponseDTO.setDescription(video.getDescription());
-                videoResponseDTO.setTitle(video.getTitle());
-                videoResponseDTO.setUsername(userOpt.get().getUsername());
+                ConsoleTextUtils.printSuccessMessage("Video başarıyla kaydedildi.");
+                videoResponseDTO.setUsername(videoSaveRequestDTO.getUsername());
+                videoResponseDTO.setDescription(videoSaveRequestDTO.getDescription());
+                videoResponseDTO.setTitle(videoSaveRequestDTO.getTitle());
+                videoResponseDTO.setViews(video.getViews());
             }
-
         } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("VideoService: Video kaydedilirken bir hata oluştu.");
         }
@@ -51,28 +51,11 @@ public class VideoService {
 
 
     public void update(VideoUpdateRequestDTO videoUpdateRequestDTO) {
-        Video video;
 
-        try {
-            Optional<User> userOpt = userService.findByUsernameAndPassword(videoUpdateRequestDTO.getUsername(), videoUpdateRequestDTO.getPassword());
-
-            if (userOpt.isPresent()) {
-                video = new Video();
-                video.setId(videoUpdateRequestDTO.getId());
-                video.setDescription(videoUpdateRequestDTO.getDescription());
-                video.setTitle(videoUpdateRequestDTO.getTitle());
-                video.setDescription(videoUpdateRequestDTO.getDescription());
-                video.setUser_id(userOpt.get().getId());
-                videoRepository.update(video);
-                ConsoleTextUtils.printSuccessMessage("Service: Video başarıyla güncellendi.");
-
-            }
-        } catch (Exception e) {
-            ConsoleTextUtils.printErrorMessage("Service: Video güncellenirken hata oluştu.");
         }
 
 
-    }//todo: controllerdan sonra yapılacak.
+    //todo: controllerdan sonra yapılacak.
 
 
     public void delete(Long id) {
@@ -102,6 +85,13 @@ public class VideoService {
         List<Video> videoList = videoRepository.findVideosByTitle(title);
         if(videoList.isEmpty()){
             ConsoleTextUtils.printErrorMessage("Aramaya uygun video bulunamadi.");
+        }
+        return videoList;
+    }
+    public List<Video> getVideosOfUser(User user){
+        List<Video> videoList = videoRepository.getVideosOfUser(user);
+        if(videoList.isEmpty()){
+            ConsoleTextUtils.printErrorMessage("Görüntülenecek video bulunamadi.");
         }
         return videoList;
     }

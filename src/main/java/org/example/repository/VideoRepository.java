@@ -1,10 +1,14 @@
 package org.example.repository;
 
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
 import org.example.entity.User;
 import org.example.entity.Video;
 import org.example.utility.ConnectionProvider;
 import org.example.utility.ConsoleTextUtils;
+import org.example.utility.HibernateConnection;
 import org.example.utility.ICRUD;
+import org.hibernate.HibernateException;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,6 +20,7 @@ import java.util.Optional;
 public class VideoRepository implements ICRUD<Video> {
     private final ConnectionProvider connectionProvider;
     private String sql;
+    private String hql;
 
     public VideoRepository() {
         this.connectionProvider = ConnectionProvider.getInstance();
@@ -23,17 +28,11 @@ public class VideoRepository implements ICRUD<Video> {
 
     @Override
     public Optional<Video> save(Video video) {
+        try {
+            HibernateConnection.entityManager.persist(video);
+            return Optional.of(video);
 
-        sql = "INSERT INTO tblvideo " +
-                "(user_id,title,description,views) VALUES (?, ?, ?, ?)";
-
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setLong(1, video.getUser_id());
-            preparedStatement.setString(2, video.getTitle());
-            preparedStatement.setString(3, video.getDescription());
-            preparedStatement.setLong(4, video.getViews());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("VideoRepository: Video kaydedilirken hata oluştu.");
         }
         return Optional.ofNullable(video);
@@ -41,48 +40,36 @@ public class VideoRepository implements ICRUD<Video> {
 
     @Override
     public Optional<Video> update(Video video) {
-        sql = "UPDATE tblvideo SET title=?,description=?,views=? WHERE id=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setString(1, video.getTitle());
-            preparedStatement.setString(2, video.getDescription());
-            preparedStatement.setLong(3, video.getViews());
-            preparedStatement.setLong(4, video.getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("VideoRepository: Video güncellenirken hata oluştu.");
-        }
-        return Optional.ofNullable(video);
+        Video updatedVideo = HibernateConnection.entityManager.merge(video);
+        return Optional.ofNullable(updatedVideo);
     }
 
     @Override
-    public void delete(Long silinecekVideoId) {
-        sql = "DELETE FROM tblvideo WHERE id = ?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setLong(1, silinecekVideoId);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
+    public boolean delete(Long silinecekVideoId) {
+
+        hql = "DELETE FROM Video v WHERE v.id = :id";
+
+        try {
+            int result = HibernateConnection.entityManager.createQuery(hql)
+                    .setParameter("id", silinecekVideoId)
+                    .executeUpdate();
+            return result > 0;
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("VideoRepository: Video silinirken hata oluştu.");
         }
+        return false;
     }
 
     @Override
     public List<Video> findAll() {
         //(Long user_id, String title, String description)
-        sql = "SELECT * FROM tblvideo";
+        hql = "FROM Video";
         List<Video> videoList = new ArrayList<>();
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            ResultSet rs = preparedStatement.executeQuery();
-            while(rs.next()) {
-                Long id = rs.getLong("id");
-                Long user_id = rs.getLong("user_id");
-                String title = rs.getString("title");
-                String description = rs.getString("description");
-                Long views = rs.getLong("views");
+        try {
+            videoList = HibernateConnection.entityManager.createQuery(hql, Video.class).getResultList();
 
-                videoList.add(new Video(id, user_id,title,description,views));
-            }
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("VideoRepository: Video listesi görüntülenirken hata oluştu.");
         }
         return videoList;
@@ -90,64 +77,60 @@ public class VideoRepository implements ICRUD<Video> {
 
     @Override
     public Optional<Video> findById(Long bulunacakVideoId) {
-        sql = "SELECT * FROM tblvideo WHERE id=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            preparedStatement.setLong(1, bulunacakVideoId);
-            ResultSet rs = preparedStatement.executeQuery();
-            if(rs.next()) {
-                Long user_id = rs.getLong("user_id");
-                String title = rs.getString("title");
-                String description = rs.getString("description");
-                Long views = rs.getLong("views");
+        hql = "FROM Video v WHERE v.id = :id";
+        try {
+            Query query = HibernateConnection.entityManager.createQuery(hql, Video.class)
+                    .setParameter("id", bulunacakVideoId);
+            Video video = (Video) query.getSingleResult();
+            return Optional.ofNullable(video);
 
-                return Optional.of(new Video(bulunacakVideoId, user_id, title, description,views));
-            }
-        } catch (SQLException e) {
+        } catch (NoResultException e) {
+            return Optional.empty();
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("VideoRepository: Aradığınız video bulunurken hata oluştu.");
         }
         return Optional.empty();
     }
 
     public List<Video> getTrendVideos(){
-        sql = "SELECT * FROM tblvideo ORDER BY views DESC LIMIT 5";
+        hql = "FROM Video v ORDER BY v.views DESC";
         List<Video> videoList = new ArrayList<>();
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            ResultSet rs = preparedStatement.executeQuery();
-            while(rs.next()) {
-                Long id = rs.getLong("id");
-                Long user_id = rs.getLong("user_id");
-                String title = rs.getString("title");
-                String description = rs.getString("description");
-                Long views = rs.getLong("views");
+        try{
+            videoList = HibernateConnection.entityManager.createQuery(hql, Video.class).setMaxResults(5).getResultList();
 
-                videoList.add(new Video(id, user_id,title,description,views));
-            }
-
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("VideoRepository: Video listesi görüntülenirken hata oluştu.");
         }
         return videoList;
     }
 
     public List<Video> findVideosByTitle(String baslik){
-        sql = "SELECT * FROM tblvideo WHERE title ILIKE '%title%'";
+        String hql = "FROM Video v WHERE LOWER(v.title) LIKE LOWER(CONCAT('%', :title, '%'))";
         List<Video> videoList = new ArrayList<>();
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            ResultSet rs = preparedStatement.executeQuery();
-            while(rs.next()) {
-                Long id = rs.getLong("id");
-                Long user_id = rs.getLong("user_id");
-                String title = rs.getString("title");
-                String description = rs.getString("description");
-                Long views = rs.getLong("views");
+        try{
+            videoList = HibernateConnection.entityManager
+                    .createQuery(hql,Video.class)
+                    .setParameter("title",baslik)
+                    .getResultList();
 
-                videoList.add(new Video(id, user_id,title,description,views));
-            }
-
-        } catch (SQLException e) {
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("VideoRepository: Video listesi görüntülenirken hata oluştu.");
         }
         return videoList;
+    }
+
+    public List<Video> getVideosOfUser(User user){
+       hql = "FROM Video v WHERE v.user = :user";
+       List<Video> videoList = new ArrayList<>();
+       try{
+           videoList = HibernateConnection.entityManager.createQuery(hql,Video.class)
+                   .setParameter("user",user)
+                   .getResultList();
+
+       }catch (Exception e) {
+           ConsoleTextUtils.printErrorMessage("VideoRepository: Kullanıcı videoları görüntülenirken hata oluştu.");
+       }
+       return videoList;
     }
 
 

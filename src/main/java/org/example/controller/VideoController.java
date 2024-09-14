@@ -4,6 +4,7 @@ import org.example.dto.request.VideoRequestDTO;
 import org.example.dto.request.VideoSaveRequestDTO;
 import org.example.dto.request.VideoUpdateRequestDTO;
 import org.example.dto.response.VideoResponseDTO;
+import org.example.entity.User;
 import org.example.entity.Video;
 import org.example.service.VideoService;
 import org.example.utility.ICRUD;
@@ -56,5 +57,8 @@ public class VideoController  {
 
     public List<Video> findVideosByTitle(String title) {
         return videoService.findVideosByTitle(title);
+    }
+    public List<Video> getVideosOfUser(User user){
+        return videoService.getVideosOfUser(user);
     }
 }

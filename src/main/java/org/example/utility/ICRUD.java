@@ -7,7 +7,7 @@ public interface ICRUD<T> {
 
     Optional<T> save(T t);
     Optional<T> update(T t);
-    void delete(Long id);
+    boolean delete(Long id);
     List<T> findAll();
     Optional<T> findById(Long id);
 }

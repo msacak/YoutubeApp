@@ -1,215 +1,171 @@
 package org.example.repository;
 
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import org.example.entity.User;
 import org.example.entity.Video;
 import org.example.utility.ConnectionProvider;
 import org.example.utility.ConsoleTextUtils;
+import org.example.utility.HibernateConnection;
 import org.example.utility.ICRUD;
+import org.hibernate.HibernateException;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class UserRepository implements ICRUD<User> {
-    private final ConnectionProvider connectionProvider;
-    private String sql;
-
-    public UserRepository() {
-        this.connectionProvider = ConnectionProvider.getInstance();
-    }
-
+    private String hql;
 
     @Override
     public Optional<User> save(User user) {
-        sql = "INSERT INTO tbluser " +
-                "(name,surname,email,username,password) VALUES (?, ?, ?, ?, ?)";
-
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setString(1, user.getName());
-            preparedStatement.setString(2, user.getSurname());
-            preparedStatement.setString(3, user.getEmail());
-            preparedStatement.setString(4, user.getUsername());
-            preparedStatement.setString(5, user.getPassword());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı kaydedilirken hata oluştu.");
-        }
+        HibernateConnection.entityManager.persist(user);
         return Optional.ofNullable(user);
     }
 
     @Override
     public Optional<User> update(User user) {
-        sql = "UPDATE tbluser SET name=?,surname=?,email=?,username=?,password=? WHERE id=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setString(1, user.getName());
-            preparedStatement.setString(2, user.getSurname());
-            preparedStatement.setString(3, user.getEmail());
-            preparedStatement.setString(4, user.getUsername());
-            preparedStatement.setString(5, user.getPassword());
-            preparedStatement.setLong(6, user.getId());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-           ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı güncellenirken hata oluştu.");
-        }
-        return Optional.ofNullable(user);
+        User updatedUser = HibernateConnection.entityManager.merge(user);
+        return Optional.ofNullable(updatedUser);
     }
 
     @Override
-    public void delete(Long silinecekUserId) {
-        sql = "DELETE FROM tbluser WHERE id = ?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setLong(1, silinecekUserId);
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
+    public boolean delete(Long silinecekUserId) { //TODO: Bu şuan HardDelete çalışıyor, buna bakılacak soft delete çevirilmeli mi ??
+        hql = "DELETE FROM User u WHERE u.id = :userId";
+        Query query = HibernateConnection.entityManager.createQuery(hql);
+        query.setParameter("userId", silinecekUserId);
+
+        try {
+           int result = query.executeUpdate();
+           return result>0;
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı silinirken hata oluştu.");
+            return false;
         }
+
     }
 
     @Override
     public List<User> findAll() {
-        sql = "SELECT * FROM tbluser";
+        hql = "FROM User";
+
         List<User> userList = new ArrayList<>();
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            ResultSet rs = preparedStatement.executeQuery();
-            while(rs.next()) {
-                long id = rs.getLong("id");
-                String name = rs.getString("name");
-                String surname = rs.getString("surname");
-                String email = rs.getString("email");
-                String username = rs.getString("username");
-                String password = rs.getString("password");
-
-                userList.add(new User(id, name, surname, email, username, password));
-            }
-
-        } catch (SQLException e) {
+        try{
+            userList = HibernateConnection.entityManager.createQuery(hql,User.class).getResultList();
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı listesi görüntülenirken hata oluştu.");
+
         }
         return userList;
     }
 
     @Override
     public Optional<User> findById(Long id) {
-        sql = "SELECT * FROM tbluser WHERE id=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            preparedStatement.setLong(1, id);
-            ResultSet rs = preparedStatement.executeQuery();
-            if(rs.next()) {
-                String name = rs.getString("name");
-                String surname = rs.getString("surname");
-                String email = rs.getString("email");
-                String username = rs.getString("username");
-                String password = rs.getString("password");
-                return Optional.of(new User(id, name, surname, email, username, password));
-            }
-        } catch (SQLException e) {
+        hql = "FROM User u WHERE u.id = :id";
+
+        try{
+            Query query = HibernateConnection.entityManager.createQuery(hql,User.class);
+            query.setParameter("id", id);
+            User user = (User) query.getSingleResult();
+            return Optional.ofNullable(user);
+
+        }catch(NoResultException e) { //Hiçbir sonuç dönmezse genel bir exception hatası vermesin, Optional.Empty dönsün
+            return Optional.empty();
+        }
+        catch (HibernateException e) {
             ConsoleTextUtils.printErrorMessage("UserRepository: Aradığınız kullanıcı bulunurken hata oluştu.");
         }
         return Optional.empty();
     }
 
     public boolean isUsernameExist(String username) {
-        sql = "SELECT * FROM tbluser WHERE username=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            preparedStatement.setString(1, username);
-            ResultSet rs = preparedStatement.executeQuery();
-            if(rs.next()) {
-                return true;
-            }
-        } catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("Kullanıcı aranırken hata oluştu.");
-        }
-    return false;
+        hql = "SELECT COUNT(u) FROM User u WHERE u.username= :username";
+        Long count = HibernateConnection.entityManager.createQuery(hql, Long.class)
+                .setParameter("username", username)
+                .getSingleResult();
+        return count>0;
+
+
     }
     public boolean isMailExist(String email) {
-        sql = "SELECT * FROM tbluser WHERE email=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            preparedStatement.setString(1, email);
-            ResultSet rs = preparedStatement.executeQuery();
-            if(rs.next()) {
-                return true;
-            }
-        } catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı aranırken hata oluştu.");
+        try {
+            // JPQL sorgusu ile e-posta adresini kontrol ediyoruz
+            hql = "SELECT COUNT(u) FROM User u WHERE u.email = :email";
+
+            // Hibernate EntityManager kullanarak sorguyu oluşturuyoruz
+            Long count = HibernateConnection.entityManager.createQuery(hql, Long.class)
+                    .setParameter("email", email)
+                    .getSingleResult();
+
+            // E-posta adresi varsa count 0'dan büyük olacak
+            return count > 0;
+
+        } catch (Exception e) {
+            ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı aranırken hata oluştu. " + e.getMessage());
+            return false;
         }
-        return false;
     }
 
+
     public boolean isUsernameAndMailExist(String username, String mail) {
-        sql = "SELECT * FROM tbluser WHERE username=? AND email=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            preparedStatement.setString(1,username);
-            preparedStatement.setString(2,mail);
-            ResultSet rs = preparedStatement.executeQuery();
-            if(rs.next()) {
-                return true;
-            }
-        } catch (SQLException e) {
+        hql = "SELECT COUNT(u) FROM User u WHERE u.username = :username AND u.email = :mail";
+        try{
+            Long count  = HibernateConnection.entityManager.createQuery(hql,Long.class)
+                    .setParameter("username",username)
+                    .setParameter("mail",mail).getSingleResult();
+            return count>0;
+
+        } catch (Exception e) {
             ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı aranırken hata oluştu.");
         }
         return false;
     }
 
     public Optional<User> findByUsername(String username) {
-        sql = "SELECT * FROM tbluser WHERE username=?";
-        try (PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setString(1,username);
-            ResultSet rs = preparedStatement.executeQuery();
+        hql = "FROM User u WHERE u.username= :username";
+        Query query = HibernateConnection.entityManager.createQuery(hql, User.class);
+        query.setParameter("username", username);
 
-            if (rs.next()) {
-                Long id = rs.getLong("id");
-                String name = rs.getString("name");
-                String surname = rs.getString("surname");
-                String email = rs.getString("email");
-                String password = rs.getString("password");
-                return Optional.of(new User(id, name, surname, email, username, password));
-            }
-        } catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı aranırken hata oluştu.");
+        try {
+            User user = (User) query.getSingleResult();
+            return Optional.of(user);
+
+        }catch(NoResultException e){
+            return Optional.empty();
+        }
+        catch (Exception e) {
+            ConsoleTextUtils.printErrorMessage("UserRepository: Kullanıcı aranırken hata oluştu. ");
+            e.printStackTrace();
         }
         return Optional.empty();
     }
-    public Optional<User> findByUsernameAndPassword(String username, String password)  {
-        sql = "SELECT * FROM tbluser WHERE username=? AND password=?";
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            preparedStatement.setString(1, username);
-            preparedStatement.setString(2, password);
-            ResultSet rs = preparedStatement.executeQuery();
-            if (rs.next()) {
-                Long id = rs.getLong("id");
-                String name = rs.getString("name");
-                String surname = rs.getString("surname");
-                String email = rs.getString("email");
-                return Optional.of(new User(id, name, surname, email, username, password));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+    public Optional<User> findByUsernameAndPassword(String username, String password) {
+        try {
+            // HQL sorgusu: JPQL kullanarak User nesnesini arıyoruz
+            String hql = "FROM User u WHERE u.username = :username AND u.password = :password";
+
+            // Hibernate EntityManager kullanarak sorguyu oluşturuyoruz
+            User user = HibernateConnection.entityManager.createQuery(hql, User.class)
+                    .setParameter("username", username)
+                    .setParameter("password", password)
+                    .getSingleResult();
+
+            // Eğer kullanıcı bulunduysa, Optional ile döndürüyoruz
+            return Optional.ofNullable(user);
+
+        }catch(NoResultException e){
+            return Optional.empty();
         }
+        catch (Exception e) {
+            ConsoleTextUtils.printErrorMessage("Repository : Bir hata oluştu. " + e.getMessage());
+        }
+
         return Optional.empty();
     }
 
-    public List<Video> getVideosOfUser(User user){
-        sql = "SELECT * FROM tblvideo WHERE user_id=?";
-        List<Video> videoList = new ArrayList<>();
-        try(PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
-            preparedStatement.setLong(1, user.getId());
-            ResultSet rs = preparedStatement.executeQuery();
-            while(rs.next()) {
-                Long id = rs.getLong("id");
-                Long user_id = rs.getLong("user_id");
-                String title = rs.getString("title");
-                String description = rs.getString("description");
-                Long views = rs.getLong("views");
-                videoList.add(new Video(id,user_id,title,description,views));
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return videoList;
-    }
+
 
 
 

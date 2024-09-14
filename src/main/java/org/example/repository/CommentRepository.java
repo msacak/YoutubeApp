@@ -34,15 +34,17 @@ public class CommentRepository implements ICRUD<Comment> {
     }
 
     @Override
-    public void delete(Long silinecekCommentId) {
+    public boolean delete(Long silinecekCommentId) {
         sql="DELETE FROM tblcomment WHERE id=?";
         try(PreparedStatement preparedStatement= connectionProvider.getPreparedStatement(sql)) {
             preparedStatement.setLong(1,silinecekCommentId);
             preparedStatement.executeUpdate();
+            return true;
         }
         catch (SQLException e) {
             ConsoleTextUtils.printErrorMessage("Repository : Yorum silinirken hata oluştu. "+e.getMessage());
         }
+        return false;
     }
 
     @Override

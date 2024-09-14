@@ -1,10 +1,18 @@
 package org.example.entity;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "tbluser")
 public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String surname;
+    @Column(unique = true)
     private String email;
+    @Column(unique = true)
     private String username;
     private String password;
 

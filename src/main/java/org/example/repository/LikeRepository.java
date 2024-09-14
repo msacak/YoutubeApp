@@ -36,14 +36,16 @@ public class LikeRepository implements ICRUD<Like> {
     }
 
     @Override
-    public void delete(Long id) {
+    public boolean delete(Long id) {
         sql = "DELETE FROM tbllike WHERE id=?";
         try (PreparedStatement preparedStatement = connectionProvider.getPreparedStatement(sql)){
             preparedStatement.setLong(1,id);
             preparedStatement.executeUpdate();
+            return true;
 
         } catch (SQLException e) {
             ConsoleTextUtils.printErrorMessage("Repository: Like silme sırasında hata oluştu: " + e.getMessage());
+            return false;
         }
     }
 

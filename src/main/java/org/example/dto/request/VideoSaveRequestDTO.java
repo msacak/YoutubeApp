@@ -7,6 +7,16 @@ public class VideoSaveRequestDTO {
     private String title;
     private String description;
 
+    public VideoSaveRequestDTO() {
+    }
+
+    public VideoSaveRequestDTO(String username, String password, String title, String description) {
+        this.username = username;
+        this.password = password;
+        this.title = title;
+        this.description = description;
+    }
+
     public String getUsername() {
         return username;
     }

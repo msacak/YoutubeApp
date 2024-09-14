@@ -1,6 +1,6 @@
 package org.example.dto.request;
 
-public class UserRequestDto  {
+public class UserRequestDTO {
 //(Long id, String name, String surname, String email, String username, String password)
 
     private String username;
@@ -8,6 +8,14 @@ public class UserRequestDto  {
     private String email;
     private String name;
     private String surname;
+
+    public UserRequestDTO(String name, String surname, String email, String username, String password) {
+        this.name = name;
+        this.surname = surname;
+        this.email = email;
+        this.username = username;
+        this.password = password;
+    }
 
     public String getUsername() {
         return username;
