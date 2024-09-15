@@ -1,7 +1,11 @@
 package org.example.entity;
 
 import jakarta.persistence.*;
-
+// performans açısından fetch = lazy, LazyInitiliazerException hatası alma ihtimalim olmasın diyorsan Eager fetch.
+//Birinde ilgili nesneye ait referans nesneleride anında oluşturur(eager -> belleğe fazladan yük biner) diğerinde sadece
+//ihtiyaç olduğuna o nesneyi oluşturur mesela getUser dersen.
+// Lazy Fetch -> Daha az bellek kullanımı daha az sorgu
+// İlişkili verilere hemen erişim, ek sorgu gerektirmez.
 @Entity
 @Table(name = "tblvideo")
 public class Video {

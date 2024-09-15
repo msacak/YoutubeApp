@@ -1,5 +1,7 @@
 package org.example.repository;
 
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Query;
 import org.example.entity.Comment;
 import org.example.utility.*;
 
@@ -9,93 +11,64 @@ import java.sql.SQLException;
 import java.util.*;
 
 public class CommentRepository implements ICRUD<Comment> {
-    private final ConnectionProvider connectionProvider;
-    private String sql;
 
-    public CommentRepository() {
-        this.connectionProvider=ConnectionProvider.getInstance();
-    }
+    private String hql;
+
 
     @Override
     public Optional<Comment> save(Comment comment) {
-        sql="INSERT INTO tblcomment (user_id,video_id,comment) VALUES (?,?,?)";
-        try(PreparedStatement preparedStatement= connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setLong(1, comment.getUser_id());
-            preparedStatement.setLong(2, comment.getVideo_id());
-            preparedStatement.setString(3, comment.getComment());
-
-            preparedStatement.executeUpdate();
-        }
-        catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("Repository : Yorum kaydedilirken hata oluştu : "+e.getMessage());
-        }
-
+        HibernateConnection.entityManager.persist(comment);
         return Optional.ofNullable(comment);
     }
 
     @Override
     public boolean delete(Long silinecekCommentId) {
-        sql="DELETE FROM tblcomment WHERE id=?";
-        try(PreparedStatement preparedStatement= connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setLong(1,silinecekCommentId);
-            preparedStatement.executeUpdate();
-            return true;
-        }
-        catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("Repository : Yorum silinirken hata oluştu. "+e.getMessage());
+        hql = "DELETE FROM Comment c WHERE c.id = :id";
+        Query query = HibernateConnection.entityManager.createQuery(hql)
+                .setParameter("id", silinecekCommentId);
+        try {
+            int result = query.executeUpdate();
+            return result > 0;
+        } catch (Exception e) {
+            ConsoleTextUtils.printErrorMessage("Repository : Yorum silinirken hata oluştu. " + e.getMessage());
         }
         return false;
     }
 
     @Override
     public Optional<Comment> update(Comment comment) {
-        sql="UPDATE tblcomment SET comment=? WHERE id=?";
-        try(PreparedStatement preparedStatement= connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setString(1,comment.getComment());
-            preparedStatement.setLong(2,comment.getId());
-            preparedStatement.executeUpdate();
-        }
-        catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("Repository : Yorum güncellenirken hata oluştu. "+e.getMessage());
-        }
-        return Optional.ofNullable(comment);
+
+        Comment updatedComment = HibernateConnection.entityManager.merge(comment);
+        return Optional.ofNullable(updatedComment);
+
     }
 
     @Override
     public List<Comment> findAll() {
-        sql="SELECT * FROM tblcomment";
-        List<Comment> commentList=new ArrayList<>();
-        try(PreparedStatement preparedStatement= connectionProvider.getPreparedStatement(sql)) {
-            ResultSet rs = preparedStatement.executeQuery();
-            while (rs.next()){
-                long id = rs.getLong("id");
-                long user_id = rs.getLong("user_id");
-                long video_id = rs.getLong("video_id");
-                String comment = rs.getString("comment");
-                commentList.add(new Comment(id,user_id,video_id,comment));
-            }
-        }
-        catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("Repository : Yorumlar listelenirken hata oluştu. "+e.getMessage());
+        hql = "FROM Comment";
+        List<Comment> commentList = new ArrayList<>();
+        try {
+            commentList = HibernateConnection.entityManager.createQuery(hql, Comment.class).getResultList();
+        } catch (Exception e) {
+            ConsoleTextUtils.printErrorMessage("Repository : Yorumlar listelenirken hata oluştu. " + e.getMessage());
         }
         return commentList;
     }
 
     @Override
     public Optional<Comment> findById(Long bulunacakCommentId) {
-        sql="SELECT * FROM tblcomment WHERE id=?";
-        try(PreparedStatement preparedStatement= connectionProvider.getPreparedStatement(sql)) {
-            preparedStatement.setLong(1,bulunacakCommentId);
-            ResultSet rs = preparedStatement.executeQuery();
-            if(rs.next()){
-                long user_id = rs.getLong("user_id");
-                long video_id = rs.getLong("video_id");
-                String comment = rs.getString("comment");
-                return Optional.of(new Comment(bulunacakCommentId,user_id,video_id,comment));
-            }
+        hql = "FROM Comment c WHERE c.id = :id";
+        try {
+            Comment comment = HibernateConnection.entityManager.createQuery(hql, Comment.class)
+                    .setParameter("id", bulunacakCommentId)
+                    .getSingleResult();
+            return Optional.ofNullable(comment);
+
+        }catch (NoResultException e){
+            return Optional.empty();
         }
-        catch (SQLException e) {
-            ConsoleTextUtils.printErrorMessage("Repository : Yorum bulunamadı. "+e.getMessage());
+        catch (Exception e) {
+            ConsoleTextUtils.printErrorMessage("UserRepository: Comment aranırken hata oluştu. " + e.getMessage());
         }
         return Optional.empty();
     }

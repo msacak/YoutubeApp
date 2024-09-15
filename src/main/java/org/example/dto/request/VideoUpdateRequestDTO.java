@@ -7,6 +7,17 @@ public class VideoUpdateRequestDTO {
     private String title;
     private String description;
 
+    public VideoUpdateRequestDTO() {
+    }
+
+    public VideoUpdateRequestDTO(Long id, String username, String password, String title, String description) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.title = title;
+        this.description = description;
+    }
+
     public Long getId() {
         return id;
     }

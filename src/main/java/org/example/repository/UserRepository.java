@@ -50,7 +50,6 @@ public class UserRepository implements ICRUD<User> {
     @Override
     public List<User> findAll() {
         hql = "FROM User";
-
         List<User> userList = new ArrayList<>();
         try{
             userList = HibernateConnection.entityManager.createQuery(hql,User.class).getResultList();

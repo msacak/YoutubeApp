@@ -24,24 +24,22 @@ public class CommentService  {
     public Optional<CommentResponseDTO> save(CommentRequestDTO commentRequestDTO) {
         Comment comment;
         CommentResponseDTO commentResponseDTO = new CommentResponseDTO();
-        Optional<User> userOptional = userService.findByUsernameAndPassword(commentRequestDTO.getUsername(), commentRequestDTO.getPassword());
-      //  Optional<Video> videoOptional =
-       try{
-           if(userOptional.isPresent()) {
-                comment = new Comment();
-                comment.setComment(commentRequestDTO.getComment());
-                comment.setUser_id(userOptional.get().getId());
+        try{
+            if(commentOptional.isPresent()){
+                commentRepository.save(commentOptional.get());
 
-           }
-       }catch (Exception e) {
-           e.printStackTrace();
-       }
-       return null;
+            }
+
+        }catch (Exception e){
+
+        }
+
+        return null;
     }
 
 
-    public Optional<CommentRequestDTO> update(CommentRequestDTO commentRequestDTO) {
-        return Optional.empty();
+    public Optional<CommentRequestDTO> update(Comment comment) {
+        return commentRepository.update(comment)
     }
 
 

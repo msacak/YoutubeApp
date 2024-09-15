@@ -22,10 +22,6 @@ public class UserService {
         User user;
         UserResponseDTO userResponseDTO = new UserResponseDTO();
         try {
-            if (userRepository.isUsernameExist(userRequestDto.getUsername()) &&
-                    userRepository.isMailExist(userRequestDto.getEmail())) {
-                ConsoleTextUtils.printErrorMessage("Kullanıcı adı veya mail zaten mevcut.");
-            }
             user = new User();
             user.setUsername(userRequestDto.getUsername());
             user.setEmail(userRequestDto.getEmail());

@@ -18,7 +18,6 @@ import java.util.Optional;
 public class VideoService {
     private VideoRepository videoRepository;
     private UserService userService;
-    private String sql;
 
     public VideoService() {
         this.videoRepository = new VideoRepository();
@@ -31,7 +30,7 @@ public class VideoService {
         VideoResponseDTO videoResponseDTO = new VideoResponseDTO();
         Optional<User> userOpt = userService.findByUsernameAndPassword(videoSaveRequestDTO.getUsername(), videoSaveRequestDTO.getPassword());
         try {
-            if(userOpt.isPresent()) {
+            if (userOpt.isPresent()) {
                 video = new Video();
                 video.setUser(userOpt.get());
                 video.setDescription(videoSaveRequestDTO.getDescription());
@@ -51,12 +50,25 @@ public class VideoService {
 
 
     public void update(VideoUpdateRequestDTO videoUpdateRequestDTO) {
+        try {
+            Optional<Video> videoOptional = videoRepository.findById(videoUpdateRequestDTO.getId());
 
+            Optional<User> userOptional = userService.findByUsernameAndPassword(videoUpdateRequestDTO.getUsername(), videoUpdateRequestDTO.getPassword());
+
+            if (videoOptional.isPresent() && userOptional.isPresent()) {
+                Video video = videoOptional.get();
+                video.setDescription(videoUpdateRequestDTO.getDescription());
+                video.setTitle(videoUpdateRequestDTO.getTitle());
+                video.setUser(userOptional.get());
+                video.setViews(video.getViews());
+                videoRepository.save(video);
+            }
+
+        } catch (Exception e) {
+            ConsoleTextUtils.printErrorMessage("VideoService: Video güncellenirken bir hata oluştu.");
         }
 
-
-    //todo: controllerdan sonra yapılacak.
-
+    }
 
     public void delete(Long id) {
         videoRepository.delete(id);
@@ -73,24 +85,25 @@ public class VideoService {
         return videoRepository.findById(id);
     }
 
-    public List<Video> getTrendVideos(){
-       List<Video> videoList = videoRepository.getTrendVideos();
-       if(videoList.isEmpty()){
-           ConsoleTextUtils.printErrorMessage("Görüntülenecek video bulunamadi");
-       }
-       return videoList;
+    public List<Video> getTrendVideos() {
+        List<Video> videoList = videoRepository.getTrendVideos();
+        if (videoList.isEmpty()) {
+            ConsoleTextUtils.printErrorMessage("Görüntülenecek video bulunamadi");
+        }
+        return videoList;
     }
 
     public List<Video> findVideosByTitle(String title) {
         List<Video> videoList = videoRepository.findVideosByTitle(title);
-        if(videoList.isEmpty()){
+        if (videoList.isEmpty()) {
             ConsoleTextUtils.printErrorMessage("Aramaya uygun video bulunamadi.");
         }
         return videoList;
     }
-    public List<Video> getVideosOfUser(User user){
+
+    public List<Video> getVideosOfUser(User user) {
         List<Video> videoList = videoRepository.getVideosOfUser(user);
-        if(videoList.isEmpty()){
+        if (videoList.isEmpty()) {
             ConsoleTextUtils.printErrorMessage("Görüntülenecek video bulunamadi.");
         }
         return videoList;
